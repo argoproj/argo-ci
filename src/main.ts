@@ -13,6 +13,7 @@ let argv = yargs
     .option('inCluster', {describe: 'Flag which indicates if app is running insite kube cluster or not' })
     .option('crdVersion', {describe: 'Version of Workflow CRD. Default is v1alpha1' })
     .option('namespace', {describe: 'Workflows creation namespace' })
+    .option('argoCiImage', {describe: 'Argo CI Image name' })
     .argv;
 
 const scm = { github: new GitHubScm(argv.githubSecret, argv.githubUser, argv.githubPassword) };
@@ -22,6 +23,7 @@ const server = app.createServer(scm, {
     version: argv.crdVersion || 'v1alpha1',
     namespace: argv.namespace || 'default',
     argoUiUrl: argv.argoUiUrl,
+    argoCiImage: argv.argoCiImage,
 });
 
 server.listen(8001);

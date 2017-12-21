@@ -15,10 +15,11 @@ export function createServer(
         inCluster: boolean,
         namespace: string,
         version: string,
+        argoCiImage: string,
     }) {
 
     const crdKubeClient = util.createKubeCrdClient(options.inCluster, options.namespace, 'argoproj.io', options.version);
-    const processor = new CiProcessor(options.repoDir, options.argoUiUrl, crdKubeClient);
+    const processor = new CiProcessor(options.repoDir, options.argoUiUrl, crdKubeClient, options.argoCiImage);
 
     const server = http.createServer(async (req, res) => {
         try {

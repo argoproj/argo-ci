@@ -19,5 +19,6 @@ export interface CommitStatus {
 
 export interface Scm {
     parseEvent(request: http.IncomingMessage): Promise<ScmEvent>;
-    addCommitStatus(event: ScmEvent, status: CommitStatus);
+    addCommitStatus(repoName: string, commit: string, status: CommitStatus);
+    createStatusExitHandler(argoCiImage: string, repoName: string, commit: string, targetUrl: string): any;
 }

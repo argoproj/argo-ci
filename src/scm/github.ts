@@ -4,6 +4,7 @@ import * as bl from 'bl';
 import * as bufferEq from 'buffer-equal-constant-time';
 import * as request from 'request-promise-native';
 import * as bunyan from 'bunyan';
+import * as uuid from 'uuid';
 
 import * as common from '../common';
 
@@ -15,10 +16,26 @@ export class GitHubScm implements common.Scm {
     constructor(private secret: string, private username: string, private password: string) {
     }
 
-    public async addCommitStatus(event: common.ScmEvent, status: common.CommitStatus) {
+    public createStatusExitHandler(argoCiImage: string, repoName: string, commit: string, targetUrl: string): any {
+        return {
+            name: uuid(),
+            container: {
+                image: argoCiImage,
+                command: ['sh', '-c'],
+                env: [
+                    {name: 'GITHUB_USER', value: this.username},
+                    {name: 'GITHUB_PASSWORD', value: this.password},
+                ],
+                args: ['node /app/scm/add-github-status.js ' +
+                    `--status {{workflow.status}} --githubUser $GITHUB_USER --githubPassword $GITHUB_PASSWORD --repoName ${repoName} --commit ${commit} --targetUrl ${targetUrl}`],
+            },
+        };
+    }
+
+    public async addCommitStatus(repoName: string, commit: string, status: common.CommitStatus) {
         try {
         await request
-            .post(`${ROOT_URL}/repos/${event.repository.fullName}/commits/${event.headCommitSha}/statuses`, {
+            .post(`${ROOT_URL}/repos/${repoName}/commits/${commit}/statuses`, {
                 body: JSON.stringify({
                     state: status.state,
                     target_url: status.targetUrl,
