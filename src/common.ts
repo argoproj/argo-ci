@@ -1,4 +1,4 @@
-import * as http from 'http';
+import * as express from 'express';
 
 export interface Repository {
     cloneUrl: string;
@@ -18,7 +18,12 @@ export interface CommitStatus {
 }
 
 export interface Scm {
-    parseEvent(request: http.IncomingMessage): Promise<ScmEvent>;
-    addCommitStatus(repoName: string, commit: string, status: CommitStatus);
-    createStatusExitHandler(argoCiImage: string, repoName: string, commit: string, targetUrl: string): any;
+    parseEvent(request: express.Request): Promise<ScmEvent>;
+    addCommitStatus(repoUrl: string, repoName: string, commit: string, status: CommitStatus);
 }
+
+export type ScmType = 'github';
+
+export interface Credentials { username: string; password: string; secret?: string; }
+
+export interface RepoCredentials { [url: string]: Credentials; }

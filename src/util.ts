@@ -26,6 +26,13 @@ export async function fileExists(filePath: string): Promise<boolean> {
     }
 }
 
+export function createKubeCoreClient(inCluster: boolean, namespace: string): Api.Core {
+    const config = {
+        ...(inCluster ? Api.config.getInCluster() : Api.config.fromKubeconfig()), namespace, promises: true,
+    };
+    return new Api.Core({...config});
+}
+
 export function createKubeCrdClient(inCluster: boolean, namespace: string, group: string, version: string): Api.CustomResourceDefinitions {
     const config = {
         ...(inCluster ? Api.config.getInCluster() : Api.config.fromKubeconfig()), namespace, group, promises: true,
@@ -34,4 +41,3 @@ export function createKubeCrdClient(inCluster: boolean, namespace: string, group
     client.addResource('workflows');
     return client;
 }
-

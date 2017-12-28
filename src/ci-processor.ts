@@ -1,6 +1,5 @@
 import * as promisify from 'promisify-node';
 import * as path from 'path';
-import * as shell from 'shelljs';
 import * as yaml from 'js-yaml';
 import * as AsyncLock from 'async-lock';
 import * as Api from 'kubernetes-client';
@@ -17,7 +16,12 @@ export class CiProcessor {
 
     private lock = new AsyncLock();
 
-    constructor(private reposPath: string, private externalUiUrl: string, private crdKubeClient: Api.CustomResourceDefinitions, private argoCiImage: string) {
+    constructor(
+        private reposPath: string,
+        private externalUiUrl: string,
+        private crdKubeClient: Api.CustomResourceDefinitions,
+        private argoCiImage: string,
+        private configPrefix: string) {
     }
 
     public async processGitEvent(scm: common.Scm, scmEvent: common.ScmEvent) {
@@ -49,7 +53,17 @@ export class CiProcessor {
     }
 
     private addExitHandler(scm: common.Scm, scmEvent: common.ScmEvent, workflow) {
-        const statusExitTemplate = scm.createStatusExitHandler(this.argoCiImage, scmEvent.repository.fullName, scmEvent.headCommitSha, this.getStatusTargetUrl(workflow));
+        const statusExitTemplate = {
+            name: uuid(),
+            container: {
+                image: this.argoCiImage,
+                command: ['sh', '-c'],
+                args: ['node /app/scm/github/add-status.js ' +
+                    `--status {{workflow.status}} --repoName ${scmEvent.repository.fullName} --repoUrl ${scmEvent.repository.cloneUrl} ` +
+                    `--commit ${scmEvent.headCommitSha} --targetUrl ${this.getStatusTargetUrl(workflow)} --inCluster true --configPrefix ${this.configPrefix}`],
+            },
+        };
+
         const existingExitHandler = workflow.spec.onExit;
         const steps = [{ name: statusExitTemplate.name, template: statusExitTemplate.name }];
         if (existingExitHandler) {
@@ -79,7 +93,7 @@ export class CiProcessor {
 
     private async addCommitStatus(scm: common.Scm, event: common.ScmEvent, status: common.CommitStatus) {
         try {
-            await scm.addCommitStatus(event.repository.fullName, event.headCommitSha, status);
+            await scm.addCommitStatus(event.repository.cloneUrl, event.repository.fullName, event.headCommitSha, status);
         } catch (e) {
             logger.error('Unable to update commit status', e);
         }
