@@ -25,5 +25,5 @@ RUN apk update && apk upgrade && \
     apk add --no-cache bash git openssh
 
 EXPOSE 8001
-CMD ["sh", "-c", \
-    "node /app/main.js --inCluster $IN_CLUSTER --githubSecret $GITHUB_SECRET --githubUser $GITHUB_USER --githubPassword $GITHUB_PASSWORD --argoUiUrl $ARGO_UI_URL --argoCiImage $ARGO_CI_IMAGE"]
+EXPOSE 8002
+CMD ["sh", "-c", "node /app/main.js --inCluster $IN_CLUSTER --argoUiUrl $ARGO_UI_URL --argoCiImage $ARGO_CI_IMAGE"]

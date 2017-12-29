@@ -58,9 +58,11 @@ export class GitHubScm implements common.Scm {
                 try {
                     const obj = JSON.parse(data.toString());
                     const scmEvent = this.convertWebHookEvent(event, obj);
-                    const creds = this.getCredsByRepoUrl(scmEvent.repository.cloneUrl);
-                    if (creds.secret && !this.verify(sig, data, creds.secret)) {
-                        reject('X-Hub-Signature does not match blob signature');
+                    if (scmEvent) {
+                        const creds = this.getCredsByRepoUrl(scmEvent.repository.cloneUrl);
+                        if (creds.secret && !this.verify(sig, data, creds.secret)) {
+                            reject('X-Hub-Signature does not match blob signature');
+                        }
                     }
                     resolve(scmEvent);
                 } catch (e) {
