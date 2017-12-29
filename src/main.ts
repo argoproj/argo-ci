@@ -13,7 +13,7 @@ let argv = yargs
     .option('configPrefix', {describe: 'Configuration name prefix' })
     .argv;
 
-app.createServer({
+app.createServers({
     argoUiUrl: argv.argoUiUrl,
     repoDir: argv.repoDir || shell.tempdir(),
     inCluster: argv.inCluster === 'true',
@@ -21,4 +21,7 @@ app.createServer({
     namespace: argv.namespace || 'default',
     argoCiImage: argv.argoCiImage || 'argoproj/argoci:latest',
     configPrefix: argv.configPrefix || 'argo-ci',
-}).then(server => server.listen(8001));
+}).then(servers => {
+    servers.webHookServer.listen(8001);
+    servers.apiServer.listen(8002);
+});

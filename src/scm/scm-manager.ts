@@ -42,6 +42,17 @@ export class ScmManager {
         return scms.get(type);
     }
 
+    public async removeScm(type: common.ScmType, repoUrl: string) {
+        const scmsConfig = this.scmsConfig.getValue();
+        const config: common.RepoCredentials = scmsConfig.get(type) || {};
+        delete config[repoUrl];
+        scmsConfig.set(type, config);
+        if (Object.keys(config).length === 0) {
+            scmsConfig.delete(type);
+        }
+        await this.updateScmSecret(scmsConfig);
+    }
+
     public dispose() {
         if (this.subscription) {
             this.subscription.unsubscribe();
@@ -60,7 +71,7 @@ export class ScmManager {
             stream.on('data', (d) => observer.next(d));
         })
         .repeat().retry()
-        .filter(info => info.object.metadata.name === this.secretName)
+        .filter(info => info.object && info.object.metadata && info.object.metadata.name === this.secretName)
         .subscribe(info => this.scmsConfig.next(this.deserializeScmsConfig(info.object.data)));
     }
 

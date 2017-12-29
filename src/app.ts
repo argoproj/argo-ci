@@ -27,7 +27,7 @@ function wrap(action: (req: express.Request) => Promise<any>) {
     };
 }
 
-export async function createServer(
+export async function createServers(
     options: {
         argoUiUrl: string,
         repoDir: string,
@@ -43,9 +43,9 @@ export async function createServer(
     const scmManager = await ScmManager.create(options.configPrefix, coreKubeClient);
     const processor = new CiProcessor(options.repoDir, options.argoUiUrl, crdKubeClient, options.argoCiImage, options.configPrefix);
 
-    const app = express();
+    const webHookServer = express();
 
-    app.post('/api/webhook/:type', wrap(async req => {
+    webHookServer.post('/api/webhook/:type', wrap(async req => {
         const scmByType = await scmManager.getScms();
         const scm = scmByType.get(req.params.type);
         if (scm) {
@@ -58,18 +58,26 @@ export async function createServer(
             throw { statusCode: 404, message: `Webhook for '${req.params.type}' is not supported` };
         }
     }));
-    app.get('/api/scms', wrap(async req => {
+
+    const apiServer = express();
+    apiServer.use(bodyParser.json({type: (req) => !req.url.startsWith('/api/webhook/')}));
+    apiServer.get('/api/scms', wrap(async req => {
         const res = {};
         const config = scmManager.getScmsConfig();
         Array.from(config.keys()).forEach(type => res[type] = config.get(type));
         return res;
     }));
 
-    app.use(bodyParser.json({type: (req) => !req.url.startsWith('/api/webhook/')}));
-    app.post('/api/scms/:type', wrap(async req => {
+    apiServer.post('/api/scms/:type', wrap(async req => {
         await scmManager.setScm(<common.ScmType> req.params.type, req.body.username, req.body.password, req.body.secret, req.body.repoUrl);
         return {ok: true };
     }));
 
-    return app;
+    apiServer.delete('/api/scms/:type/:url', wrap(async req => {
+        await scmManager.removeScm(req.params.type, req.params.url);
+        return {ok: true };
+    }));
+    apiServer.get('/', express.static(__dirname, { index: 'index.html' }));
+
+    return { webHookServer, apiServer };
 }

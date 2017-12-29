@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="argo-ci">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Argo CI</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script id="angularScript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
+    <script>
+        angular.module('argo-ci', []).service('ScmService', function($http) {
+            this.getScms = function() {
+                return $http.get('/api/scms');
+            };
+            this.removeScm = function(type, url) {
+                return $http.delete('/api/scms/' + type + '/' + encodeURIComponent(url));
+            };
+            this.addScm = function(type, url, username, password, secret) {
+                return $http.post('/api/scms/' + type, {
+                    username: username,
+                    password: password,
+                    secret: secret,
+                    repoUrl: url,
+                });
+            }
+        }).controller('ScmsController', function($scope, ScmService) {
+            function reloadScms() {
+                return ScmService.getScms().then(function(scms) {
+                    $scope.scms = scms.data;
+                    $scope.noScms = Object.keys(scms.data).length === 0;
+                });
+            }
+
+            $scope.webHookRoot = window.location.protocol + window.location.host + '/api/webhook';
+            $scope.newScm = { type: 'github' };
+            $scope.removeScm = function(type, url) {
+                ScmService.removeScm(type, url).then(reloadScms);
+            };
+
+            $scope.addScm = function() {
+                ScmService.addScm(
+                    $scope.newScm.type,
+                    $scope.newScm.url,
+                    $scope.newScm.username,
+                    $scope.newScm.password,
+                    $scope.newScm.secret
+                ).then(function() {
+                    $scope.newScm = { type: 'github' };
+                }).then(reloadScms);
+            };
+            reloadScms();
+        });
+    </script>
+</head>
+<body ng-controller="ScmsController">
+    <h2>Argo CI Repositories Configuration</h2>
+    <form name="newScmForm">
+        <h3>Register New Repository</h3>
+        <select name="type" ng-model="newScm.type">
+            <option value="github">Github</option>
+        </select>
+        <label for="url"> Repo URL: </label>
+        <input ng-model="newScm.url" name="url" type="text" required/>
+        <label for="username"> Username: </label>
+        <input ng-model="newScm.username" name="username" type="text" required/>
+        <label for="password"> Password: </label>
+        <input ng-model="newScm.password" name="password" type="password" required/>
+        <label for="secret"> Secret: </label>
+        <input ng-model="newScm.secret" name="secret" type="password"/>
+        <button ng-click="newScmForm.$valid && addScm()">Add</button>
+    </form>
+    <div>
+        <div ng-repeat="(type, repos) in scms">
+            <h3>{{type}}</h3> Web hook url: <a href="{{webHookRoot + '/' + type}}">{{webHookRoot + '/' + type}}</a>
+            <ul ng-repeat="repo in repos">
+                {{repo}} <button ng-click="removeScm(type, repo)">Remove</button>
+            </ul>
+        </div>
+        <div ng-if="noScms">
+            <h3>No Repositories Connected</h3>
+        </div>
+    </div>
+</body>
+</html>
