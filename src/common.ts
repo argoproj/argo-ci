@@ -18,6 +18,7 @@ export interface CommitStatus {
 }
 
 export interface Scm {
+    type: ScmType;
     parseEvent(request: express.Request): Promise<ScmEvent>;
     addCommitStatus(repoUrl: string, repoName: string, commit: string, status: CommitStatus);
 }

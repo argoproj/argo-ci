@@ -36,7 +36,7 @@ ScmManager.create(argv.configPrefix, coreKubeClient).then(async scmManager => {
     }
     await scm.addCommitStatus(argv.repoUrl, argv.repoName, argv.commit, {
         targetUrl: argv.targetUrl,
-        description: argv.description,
+        description: argv.description || 'Argo CI',
         state,
     });
 

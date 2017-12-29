@@ -41,7 +41,7 @@ export async function createServers(
     const crdKubeClient = util.createKubeCrdClient(options.inCluster, options.namespace, 'argoproj.io', options.version);
     const coreKubeClient = util.createKubeCoreClient(options.inCluster, options.namespace);
     const scmManager = await ScmManager.create(options.configPrefix, coreKubeClient);
-    const processor = new CiProcessor(options.repoDir, options.argoUiUrl, crdKubeClient, options.argoCiImage, options.configPrefix);
+    const processor = new CiProcessor(options.repoDir, options.argoUiUrl, crdKubeClient, options.argoCiImage, options.configPrefix, options.namespace);
 
     const webHookServer = express();
 

@@ -3,33 +3,29 @@ import * as crypto from 'crypto';
 import * as bl from 'bl';
 import * as bufferEq from 'buffer-equal-constant-time';
 import * as request from 'request-promise-native';
-import * as bunyan from 'bunyan';
 
 import * as common from '../../common';
 
-const logger = bunyan.createLogger({ name: 'github-scm' });
 const ROOT_URL = 'https://api.github.com';
 
 export class GitHubScm implements common.Scm {
+
+    public type: common.ScmType = 'github';
 
     constructor(private repoCredentials: common.RepoCredentials) {
     }
 
     public async addCommitStatus(repoUrl: string, repoName: string, commit: string, status: common.CommitStatus) {
-        try {
-            const creds = this.getCredsByRepoUrl(repoUrl);
-            await request.post(`${ROOT_URL}/repos/${repoName}/commits/${commit}/statuses`, {
-                body: JSON.stringify({
-                    state: status.state,
-                    target_url: status.targetUrl,
-                    description: status.description,
-                }),
-                headers: { 'User-Agent': 'Argo CI' },
-                auth: { username: creds.username, password: creds.password },
-            });
-        } catch (e) {
-            logger.error('Failed to post status update', e);
-        }
+        const creds = this.getCredsByRepoUrl(repoUrl);
+        await request.post(`${ROOT_URL}/repos/${repoName}/commits/${commit}/statuses`, {
+            body: JSON.stringify({
+                state: status.state,
+                target_url: status.targetUrl,
+                description: status.description,
+            }),
+            headers: { 'User-Agent': 'Argo CI' },
+            auth: { username: creds.username, password: creds.password },
+        });
     }
 
     public parseEvent(req: express.Request): Promise<common.ScmEvent> {

@@ -21,7 +21,8 @@ export class CiProcessor {
         private externalUiUrl: string,
         private crdKubeClient: Api.CustomResourceDefinitions,
         private argoCiImage: string,
-        private configPrefix: string) {
+        private configPrefix: string,
+        private namespace: string) {
     }
 
     public async processGitEvent(scm: common.Scm, scmEvent: common.ScmEvent) {
@@ -58,9 +59,11 @@ export class CiProcessor {
             container: {
                 image: this.argoCiImage,
                 command: ['sh', '-c'],
-                args: ['node /app/scm/github/add-status.js ' +
+                args: ['node /app/scm/add-status.js ' +
                     `--status {{workflow.status}} --repoName ${scmEvent.repository.fullName} --repoUrl ${scmEvent.repository.cloneUrl} ` +
-                    `--commit ${scmEvent.headCommitSha} --targetUrl ${this.getStatusTargetUrl(workflow)} --inCluster true --configPrefix ${this.configPrefix}`],
+                    `--commit ${scmEvent.headCommitSha} --targetUrl ${this.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
+                    `--inCluster true --configPrefix ${this.configPrefix} ` +
+                    `--scm ${scm.type} --namespace ${this.namespace}`],
             },
         };
 
