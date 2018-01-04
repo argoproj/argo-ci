@@ -23,7 +23,7 @@
         "array-type": [false],
         "prefer-const": false,
         "no-angle-bracket-type-assertion": false,
-        "no-unused-variable": [true],
+        "no-unused-variable": false,
         "no-empty-interface": false
     }
 }

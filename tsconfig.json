@@ -1,6 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "noUnusedLocals": true,
     "outDir": "./dist",
     "target": "es6",
     "module": "commonjs",
