@@ -1,15 +1,15 @@
 import { Observable, Observer, BehaviorSubject, Subscription } from 'rxjs';
 import * as JSONStream from 'json-stream';
 
-import * as common from '../common';
-import * as scm from '../scm';
+import * as common from './common';
+import * as scm from './scm';
 
 type ScmsConfig = Map<common.ScmType, common.RepoCredentials>;
 
-export class ScmManager {
+export class ConfigManager {
 
-    public static async create(kubeSecretPrefix: string, kubeCoreClient): Promise<ScmManager> {
-        const manager = new ScmManager(kubeSecretPrefix, kubeCoreClient);
+    public static async create(kubeSecretPrefix: string, kubeCoreClient): Promise<ConfigManager> {
+        const manager = new ConfigManager(kubeSecretPrefix, kubeCoreClient);
         await manager.initialize();
         return manager;
     }
@@ -17,10 +17,31 @@ export class ScmManager {
     private subscription: Subscription;
     private scmsConfig: BehaviorSubject<ScmsConfig>;
 
-    private constructor(private kubeSecretPrefix: string, private kubeCoreClient) {}
+    private constructor(public readonly kubeSecretPrefix: string, private kubeCoreClient) {}
 
     public async getScms(): Promise<Map<common.ScmType, common.Scm>> {
         return this.getScmsFromConfig(this.scmsConfig.getValue());
+    }
+
+    public async getSettings(): Promise<common.Settings> {
+        const configMap = await this.loadKubeEntity('configmap', this.configMapName) || {
+            data: {
+                externalUiUrl: 'http://argo-ci',
+            },
+        };
+        return configMap.data;
+    }
+
+    public async updateSettings(settings: common.Settings) {
+        const updatedConfigMap = {
+            apiVersion: 'v1',
+            kind: 'ConfigMap',
+            metadata: {
+                name: this.configMapName,
+            },
+            data: settings,
+        };
+        await this.updateKubeEntity('configmap', this.configMapName, updatedConfigMap);
     }
 
     public getScmsConfig(): Map<common.ScmType, string[]> {
@@ -61,7 +82,7 @@ export class ScmManager {
     }
 
     private async initialize() {
-        this.scmsConfig = new BehaviorSubject<ScmsConfig>(this.deserializeScmsConfig((await this.loadScmSecret() || {}).data));
+        this.scmsConfig = new BehaviorSubject<ScmsConfig>(this.deserializeScmsConfig((await this.loadKubeEntity('secret', this.secretName) || {}).data));
         this.subscription = new Observable((observer: Observer<any>) => {
             let stream = this.kubeCoreClient.ns.secret.getStream({ qs: { watch: true } });
             stream.on('end', () => observer.complete());
@@ -90,8 +111,7 @@ export class ScmManager {
     }
 
     private async updateScmSecret(data: ScmsConfig) {
-        const secret = await this.loadScmSecret();
-        const updatedSecret = { body: {
+        const updatedSecret = {
             apiVersion: 'v1',
             kind: 'Secret',
             metadata: {
@@ -99,12 +119,8 @@ export class ScmManager {
             },
             type: 'Opaque',
             data: this.serializeScmsConfig(data),
-        }};
-        if (!secret)  {
-            await this.kubeCoreClient.ns.secret.post(updatedSecret);
-        } else {
-            await this.kubeCoreClient.ns.secret.put({ name: this.secretName, body: updatedSecret.body });
-        }
+        };
+        this.updateKubeEntity('secret', this.secretName, updatedSecret);
     }
 
     private deserializeScmsConfig(data): ScmsConfig {
@@ -123,9 +139,18 @@ export class ScmManager {
         return result;
     }
 
-    private async loadScmSecret() {
+    private async updateKubeEntity(type: string, name: string, updatedEntity) {
+        const entity = await this.loadKubeEntity(type, name);
+        if (!entity)  {
+            await this.kubeCoreClient.ns[type].post({ body: updatedEntity });
+        } else {
+            await this.kubeCoreClient.ns[type].put({ name, body: updatedEntity });
+        }
+    }
+
+    private async loadKubeEntity(type: string, name: string) {
         try  {
-            return await this.kubeCoreClient.ns.secret.get(this.secretName);
+            return await this.kubeCoreClient.ns[type].get(name);
         } catch (e) {
             if (e.code === 404) {
                 return null;
@@ -137,5 +162,9 @@ export class ScmManager {
 
     private get secretName(): string {
         return `${this.kubeSecretPrefix}-scm`;
+    }
+
+    private get configMapName(): string {
+        return `${this.kubeSecretPrefix}-settings`;
     }
 }

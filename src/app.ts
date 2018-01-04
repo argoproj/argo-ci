@@ -5,7 +5,7 @@ import * as bodyParser from 'body-parser';
 import * as common from './common';
 import * as util from './util';
 import { CiProcessor } from './ci-processor';
-import { ScmManager } from './scm';
+import { ConfigManager } from './config-manager';
 
 const logger = bunyan.createLogger({ name: 'app' });
 
@@ -29,7 +29,6 @@ function wrap(action: (req: express.Request) => Promise<any>) {
 
 export async function createServers(
     options: {
-        argoUiUrl: string,
         repoDir: string,
         inCluster: boolean,
         namespace: string,
@@ -40,13 +39,13 @@ export async function createServers(
 
     const crdKubeClient = util.createKubeCrdClient(options.inCluster, options.namespace, 'argoproj.io', options.version);
     const coreKubeClient = util.createKubeCoreClient(options.inCluster, options.namespace);
-    const scmManager = await ScmManager.create(options.configPrefix, coreKubeClient);
-    const processor = new CiProcessor(options.repoDir, options.argoUiUrl, crdKubeClient, options.argoCiImage, options.configPrefix, options.namespace);
+    const configManager = await ConfigManager.create(options.configPrefix, coreKubeClient);
+    const processor = new CiProcessor(options.repoDir, crdKubeClient, options.argoCiImage, options.namespace, configManager);
 
     const webHookServer = express();
 
     webHookServer.post('/api/webhook/:type', wrap(async req => {
-        const scmByType = await scmManager.getScms();
+        const scmByType = await configManager.getScms();
         const scm = scmByType.get(req.params.type);
         if (scm) {
             const event = await scm.parseEvent(req);
@@ -61,20 +60,23 @@ export async function createServers(
 
     const apiServer = express();
     apiServer.use(bodyParser.json({type: (req) => !req.url.startsWith('/api/webhook/')}));
-    apiServer.get('/api/scms', wrap(async req => {
+    apiServer.get('/api/configuration/settings', wrap(async req => configManager.getSettings()));
+    apiServer.put('/api/configuration/settings', wrap(async req => configManager.updateSettings(req.body)));
+
+    apiServer.get('/api/configuration/scms', wrap(async req => {
         const res = {};
-        const config = scmManager.getScmsConfig();
+        const config = configManager.getScmsConfig();
         Array.from(config.keys()).forEach(type => res[type] = config.get(type));
         return res;
     }));
 
-    apiServer.post('/api/scms/:type', wrap(async req => {
-        await scmManager.setScm(<common.ScmType> req.params.type, req.body.username, req.body.password, req.body.secret, req.body.repoUrl);
+    apiServer.post('/api/configuration/scms/:type', wrap(async req => {
+        await configManager.setScm(<common.ScmType> req.params.type, req.body.username, req.body.password, req.body.secret, req.body.repoUrl);
         return {ok: true };
     }));
 
-    apiServer.delete('/api/scms/:type/:url', wrap(async req => {
-        await scmManager.removeScm(req.params.type, req.params.url);
+    apiServer.delete('/api/configuration/scms/:type/:url', wrap(async req => {
+        await configManager.removeScm(req.params.type, req.params.url);
         return {ok: true };
     }));
     apiServer.get('/', express.static(__dirname, { index: 'index.html' }));

@@ -8,6 +8,7 @@ import * as uuid from 'uuid';
 
 import * as common from './common';
 import * as util from './util';
+import { ConfigManager } from './config-manager';
 
 const fs = promisify('fs');
 const logger = bunyan.createLogger({ name: 'ci-processor' });
@@ -18,11 +19,10 @@ export class CiProcessor {
 
     constructor(
         private reposPath: string,
-        private externalUiUrl: string,
         private crdKubeClient: Api.CustomResourceDefinitions,
         private argoCiImage: string,
-        private configPrefix: string,
-        private namespace: string) {
+        private namespace: string,
+        private configManager: ConfigManager) {
     }
 
     public async processGitEvent(scm: common.Scm, scmEvent: common.ScmEvent) {
@@ -39,21 +39,23 @@ export class CiProcessor {
         const ciWorkflow = await this.asyncLock(scmEvent.repository.cloneUrl, () => this.loadCiWorkflow(scmEvent.repository.cloneUrl, scmEvent.headCommitSha));
         if (ciWorkflow) {
             this.fillCommitArgs(scmEvent, ciWorkflow);
-            this.addExitHandler(scm, scmEvent, ciWorkflow);
+            await this.addExitHandler(scm, scmEvent, ciWorkflow);
             const res = await this.crdKubeClient.ns['workflows'].post({ body: ciWorkflow });
             this.addCommitStatus(scm, scmEvent, {
-                targetUrl: this.getStatusTargetUrl(res),
+                targetUrl: await this.getStatusTargetUrl(res),
                 description: 'Argo CI workflow',
                 state: 'pending',
             });
         }
     }
 
-    private getStatusTargetUrl(workflow): string {
-        return `${this.externalUiUrl}/timeline/${workflow.metadata.namespace}/${workflow.metadata.name}`;
+    private async getStatusTargetUrl(workflow): Promise<string> {
+        const settings = await this.configManager.getSettings();
+        return `${settings.externalUiUrl}/timeline/${workflow.metadata.namespace}/${workflow.metadata.name}`;
     }
 
-    private addExitHandler(scm: common.Scm, scmEvent: common.ScmEvent, workflow) {
+    private async addExitHandler(scm: common.Scm, scmEvent: common.ScmEvent, workflow) {
+        const settings = await this.configManager.getSettings();
         const statusExitTemplate = {
             name: uuid(),
             container: {
@@ -61,8 +63,8 @@ export class CiProcessor {
                 command: ['sh', '-c'],
                 args: ['node /app/scm/add-status.js ' +
                     `--status {{workflow.status}} --repoName ${scmEvent.repository.fullName} --repoUrl ${scmEvent.repository.cloneUrl} ` +
-                    `--commit ${scmEvent.headCommitSha} --targetUrl ${this.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
-                    `--inCluster true --configPrefix ${this.configPrefix} ` +
+                    `--commit ${scmEvent.headCommitSha} --targetUrl ${settings.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
+                    `--inCluster true --configPrefix ${this.configManager.kubeSecretPrefix} ` +
                     `--scm ${scm.type} --namespace ${this.namespace}`],
             },
         };

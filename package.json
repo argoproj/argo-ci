@@ -4,7 +4,7 @@
   "main": "src/main.ts",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon --nolazy --inspect -r ts-node/register src/main.ts --argoUiUrl ${ARGO_UI_URL:-'http://localhost:4200'}",
+    "start": "nodemon --nolazy --inspect -r ts-node/register src/main.ts | bunyan",
     "build": "tsc --project ./tsconfig.json && cp ./src/index.html ./dist",
     "lint": "tslint --project ./tsconfig.json"
   },

@@ -4,7 +4,7 @@ const logger = bunyan.createLogger({ name: 'add-status' });
 
 import * as util from '../util';
 
-import { ScmManager } from './scm-manager';
+import { ConfigManager } from '../config-manager';
 
 let argv = yargs
     .option('scm', {demand: true })
@@ -19,8 +19,8 @@ let argv = yargs
     .argv;
 
 const coreKubeClient = util.createKubeCoreClient(argv.inCluster === 'true', argv.namespace);
-ScmManager.create(argv.configPrefix, coreKubeClient).then(async scmManager => {
-    const scmByName = await scmManager.getScms();
+ConfigManager.create(argv.configPrefix, coreKubeClient).then(async configManager => {
+    const scmByName = await configManager.getScms();
     const scm = scmByName.get(argv.scm);
     let state: 'error' | 'failure' | 'pending' | 'success';
     switch (argv.status) {
@@ -40,5 +40,5 @@ ScmManager.create(argv.configPrefix, coreKubeClient).then(async scmManager => {
         state,
     });
 
-    scmManager.dispose();
+    configManager.dispose();
 }).catch(err => logger.error(err));

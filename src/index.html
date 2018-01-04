@@ -8,37 +8,49 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script id="angularScript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
     <script>
-        angular.module('argo-ci', []).service('ScmService', function($http) {
+        angular.module('argo-ci', []).service('ConfigurationService', function($http) {
             this.getScms = function() {
-                return $http.get('/api/scms');
+                return $http.get('/api/configuration/scms');
             };
             this.removeScm = function(type, url) {
-                return $http.delete('/api/scms/' + type + '/' + encodeURIComponent(url));
+                return $http.delete('/api/configuration/scms/' + type + '/' + encodeURIComponent(url));
             };
             this.addScm = function(type, url, username, password, secret) {
-                return $http.post('/api/scms/' + type, {
+                return $http.post('/api/configuration/scms/' + type, {
                     username: username,
                     password: password,
                     secret: secret,
                     repoUrl: url,
                 });
-            }
-        }).controller('ScmsController', function($scope, ScmService) {
+            };
+            this.loadSettings = function() {
+                return $http.get('/api/configuration/settings');
+            };
+            this.updateSettings = function(settings) {
+                return $http.put('/api/configuration/settings', settings);
+            };
+        }).controller('ConfigurationController', function($scope, ConfigurationService) {
             function reloadScms() {
-                return ScmService.getScms().then(function(scms) {
+                return ConfigurationService.getScms().then(function(scms) {
                     $scope.scms = scms.data;
                     $scope.noScms = Object.keys(scms.data).length === 0;
+                });
+            }
+            function reloadSettings() {
+                return ConfigurationService.loadSettings().then(function(settings) {
+                    $scope.settings = settings.data;
                 });
             }
 
             $scope.webHookRoot = window.location.protocol + window.location.host + '/api/webhook';
             $scope.newScm = { type: 'github' };
+            $scope.settings = {};
             $scope.removeScm = function(type, url) {
-                ScmService.removeScm(type, url).then(reloadScms);
+                ConfigurationService.removeScm(type, url).then(reloadScms);
             };
 
             $scope.addScm = function() {
-                ScmService.addScm(
+                ConfigurationService.addScm(
                     $scope.newScm.type,
                     $scope.newScm.url,
                     $scope.newScm.username,
@@ -48,12 +60,22 @@
                     $scope.newScm = { type: 'github' };
                 }).then(reloadScms);
             };
+            $scope.updateSettings = function() {
+                ConfigurationService.updateSettings($scope.settings).then(reloadSettings);
+            };
             reloadScms();
+            reloadSettings();
         });
     </script>
 </head>
-<body ng-controller="ScmsController">
-    <h2>Argo CI Repositories Configuration</h2>
+<body ng-controller="ConfigurationController">
+    <h2>Argo CI Configuration</h2>
+    <form name="settingsForm">
+        <h3>Settings</h3>
+        <label for="externalUiUrl">Argo UI External URL: </label>
+        <input ng-model="settings.externalUiUrl" name="externalUiUrl" type="text" required/>
+        <button ng-click="settingsForm.$valid && updateSettings()">Update</button>
+    </form>
     <form name="newScmForm">
         <h3>Register New Repository</h3>
         <select name="type" ng-model="newScm.type">

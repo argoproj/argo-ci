@@ -28,3 +28,7 @@ export type ScmType = 'github';
 export interface Credentials { username: string; password: string; secret?: string; }
 
 export interface RepoCredentials { [url: string]: Credentials; }
+
+export interface Settings {
+    externalUiUrl: string;
+}
