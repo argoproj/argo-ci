@@ -6,11 +6,31 @@ Argo CI is a continuous integration and deployment system powered by [Argo](http
 ( currently only Github is supported) and automatically triggers CI workflow defined using [Argo YAML DSL](https://applatix.com/open-source/argo/docs/argo_v2_yaml.html).
 
 ## Deploy Argo CI to your kubernetes cluster
-To be described.
+
+Argo CI might be installed using Helm:
+
+```
+helm repo add argo https://argoproj.github.io/argo-helm/
+helm install argo/argo-ci --name argo-ci
+```
+
+The `argo-ci` helm chart installs three deployments:
+- Argo workflow controller
+- Argo UI deployment
+- Argo CI deployment
+
+Argo UI and Argo CI are available externally via load balancer kubernetes services.
 
 ## Configure integration with Github
 
 Following steps are required to configure integration:
+
+* For security reasons Argo CI configuration UI is not available externally. Easiest way to access it is to use port forwarding: `kubectl port-forward <argo-ci-pod> 8002:8002`.
+UI should be available via http://localhost:8002.
+* Configure external Argo UI URL using Argo CI configuration UI.
+* Add required repositories using Argo UI:
+
+![Configuration UI](docs/configuration.png "Configuration UI")
 
 * Create webhook using [Github UI](https://developer.github.com/webhooks/creating/#setting-up-a-webhook):
   * set Payload URL to `http<ArgoCiDomain>/api/webhook/github`
@@ -24,7 +44,4 @@ To build project locally install [nodejs](https://nodejs.org) and [yarn](https:/
 debug project locally:
 
 * Execute `yarn build` to build project. Command stores build results in `./dist` directory.
-* Execute `yarn start` to start service locally. Following environment variables should be set before running service:
-  * GITHUB-SECRET - Github [webhook](https://developer.github.com/webhooks/creating/#setting-up-a-webhook) secret
-  * GITHUB_USER and GITHUB_PASSWORD  - Github account username and password. Account should have permissions to update commit status.
-  * ARGO_UI_URL - externally available [Argo](http://argoproj.io) UI URL.
+* Execute `yarn start` to start service locally.
