@@ -26,4 +26,4 @@ RUN apk update && apk upgrade && \
 
 EXPOSE 8001
 EXPOSE 8002
-CMD ["sh", "-c", "node /app/main.js --inCluster $IN_CLUSTER --argoUiUrl $ARGO_UI_URL --argoCiImage $ARGO_CI_IMAGE"]
+CMD ["sh", "-c", "node /app/main.js --inCluster $IN_CLUSTER --argoUiUrl $ARGO_UI_URL --argoCiImage $ARGO_CI_IMAGE --controllerInstanceId $CONTROLLER_INSTANCE_ID"]

@@ -14,7 +14,6 @@ const fs = promisify('fs');
 const logger = bunyan.createLogger({ name: 'ci-processor' });
 
 export class CiProcessor {
-
     private lock = new AsyncLock();
 
     constructor(
@@ -22,6 +21,7 @@ export class CiProcessor {
         private crdKubeClient: Api.CustomResourceDefinitions,
         private argoCiImage: string,
         private namespace: string,
+        private controllerInstanceId: string,
         private configManager: ConfigManager) {
     }
 
@@ -38,6 +38,7 @@ export class CiProcessor {
     public async doProcessGitEvent(scm: common.Scm, scmEvent: common.ScmEvent) {
         const ciWorkflow = await this.asyncLock(scmEvent.repository.cloneUrl, () => this.loadCiWorkflow(scmEvent.repository.cloneUrl, scmEvent.headCommitSha));
         if (ciWorkflow) {
+            this.fillLabels(ciWorkflow);
             this.fillCommitArgs(scmEvent, ciWorkflow);
             await this.addExitHandler(scm, scmEvent, ciWorkflow);
             const res = await this.crdKubeClient.ns['workflows'].post({ body: ciWorkflow });
@@ -81,6 +82,14 @@ export class CiProcessor {
         workflow.spec.onExit = onExitTemplate.name;
         workflow.spec.templates.push(statusExitTemplate);
         workflow.spec.templates.push(onExitTemplate);
+    }
+
+    private fillLabels(ciWorkflow) {
+        if (this.controllerInstanceId) {
+            const labels = ciWorkflow.metadata.labels || {};
+            labels['workflows.argoproj.io/controller-instanceid'] = this.controllerInstanceId;
+            ciWorkflow.metadata.labels = labels;
+        }
     }
 
     private fillCommitArgs(scmEvent: common.ScmEvent, ciWorkflow) {

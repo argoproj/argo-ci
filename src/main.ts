@@ -13,6 +13,7 @@ let argv = yargs
     .option('namespace', {describe: 'Workflows creation namespace' })
     .option('argoCiImage', {describe: 'Argo CI Image name' })
     .option('configPrefix', {describe: 'Configuration name prefix' })
+    .option('controllerInstanceId', {describe: 'Argo workflow controller instance id. Used to separate workflows in a cluster with multiple controllers.' })
     .argv;
 
 app.createServers({
@@ -22,6 +23,7 @@ app.createServers({
     namespace: argv.namespace || 'default',
     argoCiImage: argv.argoCiImage || 'argoproj/argoci:latest',
     configPrefix: argv.configPrefix || 'argo-ci',
+    controllerInstanceId: argv.controllerInstanceId || '',
 }).then(servers => {
     servers.webHookServer.listen(8001);
     servers.apiServer.listen(8002);
