@@ -88,8 +88,9 @@ export class ConfigManager {
             stream.on('end', () => observer.complete());
             stream.on('error', e => observer.error(e));
             stream.on('close', () => observer.complete());
-            stream = stream.pipe(new JSONStream());
-            stream.on('data', (d) => observer.next(d));
+            const jsonStream = stream.pipe(new JSONStream());
+            jsonStream.on('data', (d) => observer.next(d));
+            return () => stream.req.abort();
         })
         .repeat().retry()
         .filter(info => info.object && info.object.metadata && info.object.metadata.name === this.secretName)

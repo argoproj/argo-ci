@@ -19,6 +19,7 @@
         "ordered-imports": [
             false
         ],
+        "no-implicit-dependencies": false,
         "arrow-parens": false,
         "array-type": [false],
         "prefer-const": false,

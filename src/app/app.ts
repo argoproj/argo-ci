@@ -82,5 +82,5 @@ export async function createServers(
     }));
     apiServer.get('/', express.static(__dirname, { index: 'index.html' }));
 
-    return { webHookServer, apiServer };
+    return { webHookServer, apiServer, configManager };
 }
