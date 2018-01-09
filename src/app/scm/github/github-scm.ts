@@ -78,7 +78,7 @@ export class GitHubScm implements common.Scm {
         } else if (eventType === 'pull_request') {
             return {
                 type: 'pull_request',
-                repository: { cloneUrl: eventData.repository.clone_url, fullName: eventData.repository.full_name },
+                repository: { cloneUrl: eventData.pull_request.head.repo.clone_url, fullName: eventData.pull_request.head.repo.full_name },
                 headCommitSha: eventData.pull_request.head.sha,
             };
         } else {
