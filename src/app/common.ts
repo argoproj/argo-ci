@@ -1,14 +1,19 @@
 import * as express from 'express';
 
+export interface Commit {
+    repo: Repository;
+    sha: string;
+}
+
 export interface Repository {
     cloneUrl: string;
     fullName: string;
 }
 
 export interface ScmEvent {
-    repository: Repository;
-    headCommitSha: string;
+    commit: Commit;
     type: 'push' | 'pull_request';
+    repo: Repository;
 }
 
 export interface CommitStatus {
@@ -20,7 +25,7 @@ export interface CommitStatus {
 export interface Scm {
     type: ScmType;
     parseEvent(request: express.Request): Promise<ScmEvent>;
-    addCommitStatus(repoUrl: string, repoName: string, commit: string, status: CommitStatus);
+    addCommitStatus(repoUrl: string, repoName: string, sha: string, status: CommitStatus);
 }
 
 export type ScmType = 'github';

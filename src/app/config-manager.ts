@@ -99,7 +99,7 @@ export class ConfigManager {
 
     private getScmsFromConfig(scmsConfig: ScmsConfig) {
         const result = new Map<common.ScmType, common.Scm>();
-        for (const key of scmsConfig.keys()) {
+        Array.from(scmsConfig.keys()).forEach(key => {
             let item: common.Scm;
             if (key === 'github') {
                 item = new scm.GitHubScm(scmsConfig.get(key));
@@ -107,7 +107,7 @@ export class ConfigManager {
                 throw new Error(`Scm type ${key} is not supported`);
             }
             result.set(key, item);
-        }
+        });
         return result;
     }
 

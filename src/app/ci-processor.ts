@@ -36,7 +36,7 @@ export class CiProcessor {
     }
 
     public async doProcessGitEvent(scm: common.Scm, scmEvent: common.ScmEvent) {
-        const ciWorkflow = await this.asyncLock(scmEvent.repository.cloneUrl, () => this.loadCiWorkflow(scmEvent.repository.cloneUrl, scmEvent.headCommitSha));
+        const ciWorkflow = await this.asyncLock(scmEvent.commit.repo.cloneUrl, () => this.loadCiWorkflow(scmEvent.commit.repo.cloneUrl, scmEvent.commit.sha));
         if (ciWorkflow) {
             this.fillLabels(ciWorkflow);
             this.fillCommitArgs(scmEvent, ciWorkflow);
@@ -63,8 +63,8 @@ export class CiProcessor {
                 image: this.argoCiImage,
                 command: ['sh', '-c'],
                 args: ['node /app/scm/add-status.js ' +
-                    `--status {{workflow.status}} --repoName ${scmEvent.repository.fullName} --repoUrl ${scmEvent.repository.cloneUrl} ` +
-                    `--commit ${scmEvent.headCommitSha} --targetUrl ${settings.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
+                    `--status {{workflow.status}} --repoName ${scmEvent.repo.fullName} --repoUrl ${scmEvent.repo.cloneUrl} ` +
+                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
                     `--inCluster true --configPrefix ${this.configManager.kubeSecretPrefix} ` +
                     `--scm ${scm.type} --namespace ${this.namespace}`],
             },
@@ -97,17 +97,17 @@ export class CiProcessor {
             const revisionParam = ciWorkflow.spec.arguments.parameters.find(param => param.name === 'revision');
             const repoParam = ciWorkflow.spec.arguments.parameters.find(param => param.name === 'repo');
             if (revisionParam) {
-                revisionParam.value = scmEvent.headCommitSha;
+                revisionParam.value = scmEvent.commit.sha;
             }
             if (repoParam) {
-                repoParam.value = scmEvent.repository.cloneUrl;
+                repoParam.value = scmEvent.commit.repo.cloneUrl;
             }
         }
     }
 
     private async addCommitStatus(scm: common.Scm, event: common.ScmEvent, status: common.CommitStatus) {
         try {
-            await scm.addCommitStatus(event.repository.cloneUrl, event.repository.fullName, event.headCommitSha, status);
+            await scm.addCommitStatus(event.repo.cloneUrl, event.repo.fullName, event.commit.sha, status);
         } catch (e) {
             logger.error('Unable to update commit status', e);
         }

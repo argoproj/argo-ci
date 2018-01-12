@@ -15,9 +15,9 @@ export class GitHubScm implements common.Scm {
     constructor(private repoCredentials: common.RepoCredentials) {
     }
 
-    public async addCommitStatus(repoUrl: string, repoName: string, commit: string, status: common.CommitStatus) {
+    public async addCommitStatus(repoUrl: string, repoName: string, sha: string, status: common.CommitStatus) {
         const creds = this.getCredsByRepoUrl(repoUrl);
-        await request.post(`${ROOT_URL}/repos/${repoName}/commits/${commit}/statuses`, {
+        await request.post(`${ROOT_URL}/repos/${repoName}/commits/${sha}/statuses`, {
             body: JSON.stringify({
                 state: status.state,
                 target_url: status.targetUrl,
@@ -55,7 +55,7 @@ export class GitHubScm implements common.Scm {
                     const obj = JSON.parse(data.toString());
                     const scmEvent = this.convertWebHookEvent(event, obj);
                     if (scmEvent) {
-                        const creds = this.getCredsByRepoUrl(scmEvent.repository.cloneUrl);
+                        const creds = this.getCredsByRepoUrl(scmEvent.repo.cloneUrl);
                         if (creds.secret && !this.verify(sig, data, creds.secret)) {
                             reject('X-Hub-Signature does not match blob signature');
                         }
@@ -72,14 +72,20 @@ export class GitHubScm implements common.Scm {
         if (eventType === 'push') {
             return {
                 type: 'push',
-                repository: { cloneUrl: eventData.repository.clone_url, fullName: eventData.repository.full_name },
-                headCommitSha: eventData.head_commit.id,
+                commit: {
+                    repo: { cloneUrl: eventData.repository.clone_url, fullName: eventData.repository.full_name },
+                    sha: eventData.head_commit.id,
+                },
+                repo: { cloneUrl: eventData.repository.clone_url, fullName: eventData.repository.full_name },
             };
         } else if (eventType === 'pull_request') {
             return {
                 type: 'pull_request',
-                repository: { cloneUrl: eventData.pull_request.head.repo.clone_url, fullName: eventData.pull_request.head.repo.full_name },
-                headCommitSha: eventData.pull_request.head.sha,
+                commit: {
+                    repo: { cloneUrl: eventData.pull_request.head.repo.clone_url, fullName: eventData.pull_request.head.repo.full_name },
+                    sha: eventData.pull_request.head.sha,
+                },
+                repo: { cloneUrl: eventData.pull_request.base.repo.clone_url, fullName: eventData.pull_request.base.repo.full_name },
             };
         } else {
             return null;
