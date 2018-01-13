@@ -1,6 +1,7 @@
 # Roadmap
 
-* V1.0.0 beta1
+* V1.0.0 alpha2
+  * Support private repositories
   * Use Github API to configure webhook
   * Cleanup completed workflows from Kubernetes CRD
   * Use minio ( and mysql ? ) to show historical data
@@ -14,7 +15,7 @@
 
 # History
 
-* V1.0 alpha1
+* V1.0.0 alpha1
   * Implemented bare minimum which is required to automatically run CI workflow on each push/pull request
   * GitHub webhook handler
   * Integration with Github commit status
