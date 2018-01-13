@@ -5,6 +5,8 @@
   * Use Github API to configure webhook
   * Cleanup completed workflows from Kubernetes CRD
   * Use minio ( and mysql ? ) to show historical data
+
+* V1.0.0 alpha3
   * Support more user friendly build pipline definition. Candidates:
     * ksonnet to generate argo workflow
     * generate argo workflow yaml from drone.io pipeline definition http://readme.drone.io/usage/getting-started/  
