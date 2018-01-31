@@ -41,4 +41,8 @@ ConfigManager.create(argv.configPrefix, coreKubeClient).then(async configManager
     });
 
     configManager.dispose();
-}).catch(err => logger.error(err));
+    process.exit(0);
+}).catch(err => {
+    process.exit(1);
+    logger.error(err);
+});
