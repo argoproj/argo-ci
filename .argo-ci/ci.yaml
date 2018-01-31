@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: argo-ci-
+spec:
+  entrypoint: argo-ci
+  arguments:
+    parameters:
+    - name: revision
+      value: master
+    - name: repo
+      value: https://github.com/argoproj/argo-ci.git
+
+  templates:
+  - name: argo-ci
+    steps:
+    - - name: build
+        template: build-node
+
+  - name: build-node
+    inputs:
+      artifacts:
+      - name: code
+        path: /src
+        git:
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
+    container:
+      image: node:9.4.0
+      command: [sh, -c]
+      args: [yarn install && yarn build]
+      workingDir: /src
