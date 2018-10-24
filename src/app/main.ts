@@ -20,6 +20,7 @@ app.createServers({
     repoDir: argv.repoDir || shell.tempdir(),
     inCluster: argv.inCluster === 'true',
     version: argv.crdVersion || 'v1alpha1',
+    workflowsNamespace: argv.namespace || 'default',
     namespace: argv.namespace || 'default',
     argoCiImage: argv.argoCiImage || 'argoproj/argoci:latest',
     configPrefix: argv.configPrefix || 'argo-ci',

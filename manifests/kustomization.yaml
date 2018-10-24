@@ -1,0 +1,5 @@
+namespace: argoci
+
+resources:
+- ./01_deployment.yaml
+- ./02_service.yaml

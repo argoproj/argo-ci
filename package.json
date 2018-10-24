@@ -7,6 +7,7 @@
     "start": "TS_NODE_PROJECT=./src/app/tsconfig.json nodemon --nolazy --inspect -r ts-node/register src/app/main.ts | bunyan",
     "build": "tsc --project ./src/app/tsconfig.json && cp ./src/app/index.html ./dist",
     "lint": "tslint --project ./src/app/tsconfig.json",
+    "docker": "./scripts/build_docker.sh",
     "test": "TS_NODE_PROJECT=./src/tests/tsconfig.json mocha --require ts-node/register ./src/tests/**/*spec.ts"
   },
   "dependencies": {

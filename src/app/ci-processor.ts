@@ -52,7 +52,7 @@ export class CiProcessor {
 
     private async getStatusTargetUrl(workflow): Promise<string> {
         const settings = await this.configManager.getSettings();
-        return `${settings.externalUiUrl}/timeline/${workflow.metadata.namespace}/${workflow.metadata.name}`;
+        return `${settings.externalUiUrl}/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`;
     }
 
     private async addExitHandler(scm: common.Scm, scmEvent: common.ScmEvent, workflow) {
@@ -64,7 +64,7 @@ export class CiProcessor {
                 command: ['sh', '-c'],
                 args: ['node /app/scm/add-status.js ' +
                     `--status {{workflow.status}} --repoName ${scmEvent.repo.fullName} --repoUrl ${scmEvent.repo.cloneUrl} ` +
-                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
+                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/workflows/${this.namespace}/{{workflow.name}} ` +
                     `--inCluster true --configPrefix ${this.configManager.kubeSecretPrefix} ` +
                     `--scm ${scm.type} --namespace ${this.namespace}`],
             },
