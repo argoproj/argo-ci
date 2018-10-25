@@ -20,6 +20,9 @@ const coreKubeClient = util.createKubeCoreClient(argv.inCluster === 'true', argv
 ConfigManager.create(argv.configPrefix, coreKubeClient).then(async configManager => {
     const scmByName = await configManager.getScms();
     const scm = scmByName.get(argv.scm);
+    if (!scm) {
+        throw Error(`Unable to find config for scm ${argv.scm}`);
+    }
     let state: 'error' | 'failure' | 'pending' | 'success';
     switch (argv.status) {
         case 'Succeeded':
@@ -41,6 +44,6 @@ ConfigManager.create(argv.configPrefix, coreKubeClient).then(async configManager
     configManager.dispose();
     process.exit(0);
 }).catch(err => {
-    process.exit(1);
     util.logger.error(err);
+    process.exit(1);
 });

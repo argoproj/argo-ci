@@ -19,6 +19,7 @@ export class CiProcessor {
         private crdKubeClient: Api.CustomResourceDefinitions,
         private argoCiImage: string,
         private namespace: string,
+        private workflowsNamespace: string,
         private controllerInstanceId: string,
         private configManager: ConfigManager) {
     }
@@ -65,7 +66,7 @@ export class CiProcessor {
                 command: ['sh', '-c'],
                 args: ['node /app/scm/add-status.js ' +
                     `--status {{workflow.status}} --repoName ${scmEvent.repo.fullName} --repoUrl ${scmEvent.repo.cloneUrl} ` +
-                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/workflows/${this.namespace}/{{workflow.name}} ` +
+                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/workflows/${this.workflowsNamespace}/{{workflow.name}} ` +
                     `--inCluster true --configPrefix ${this.configManager.kubeSecretPrefix} ` +
                     `--scm ${scm.type} --namespace ${this.namespace}`],
             },
