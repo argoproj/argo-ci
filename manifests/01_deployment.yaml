@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: argoci
+spec:
+  template:
+    metadata:
+      labels:
+        app: argoci
+    spec:
+      containers:
+        - name: ci
+          image: "argoproj/argoci:latest"
+          env:
+          - name: IN_CLUSTER
+            value: "true"
+          - name: WORKFLOWS_NAMESPACE
+            value: default
+          - name: NAMESPACE
+            value: default
+          - name: ARGO_CI_IMAGE
+            value: "argoproj/argoci:latest"
+          ports:
+          - containerPort: 8001
+          - containerPort: 8002

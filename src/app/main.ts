@@ -1,10 +1,8 @@
 import * as yargs from 'yargs';
 import * as shell from 'shelljs';
-import * as bunyan from 'bunyan';
 
 import * as app from './app';
-
-const logger = bunyan.createLogger({ name: 'add-status' });
+import { logger } from './util';
 
 let argv = yargs
     .option('reposDir', {describe: 'Repositories temp directory' })
@@ -20,6 +18,7 @@ app.createServers({
     repoDir: argv.repoDir || shell.tempdir(),
     inCluster: argv.inCluster === 'true',
     version: argv.crdVersion || 'v1alpha1',
+    workflowsNamespace: argv.workflowsNamespace || 'default',
     namespace: argv.namespace || 'default',
     argoCiImage: argv.argoCiImage || 'argoproj/argoci:latest',
     configPrefix: argv.configPrefix || 'argo-ci',
@@ -27,4 +26,6 @@ app.createServers({
 }).then(servers => {
     servers.webHookServer.listen(8001);
     servers.apiServer.listen(8002);
-}).catch(e => logger.error(e));
+}).catch(e => {
+    logger.error(e);
+});

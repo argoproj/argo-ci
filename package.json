@@ -4,9 +4,10 @@
   "main": "src/app/main.ts",
   "license": "MIT",
   "scripts": {
-    "start": "TS_NODE_PROJECT=./src/app/tsconfig.json nodemon --nolazy --inspect -r ts-node/register src/app/main.ts | bunyan",
+    "start": "TS_NODE_PROJECT=./src/app/tsconfig.json nodemon --nolazy --inspect -r ts-node/register src/app/main.ts",
     "build": "tsc --project ./src/app/tsconfig.json && cp ./src/app/index.html ./dist",
     "lint": "tslint --project ./src/app/tsconfig.json",
+    "docker": "./scripts/build_docker.sh",
     "test": "TS_NODE_PROJECT=./src/tests/tsconfig.json mocha --require ts-node/register ./src/tests/**/*spec.ts"
   },
   "dependencies": {
@@ -14,8 +15,8 @@
     "bl": "^1.2.1",
     "body-parser": "^1.18.2",
     "buffer-equal-constant-time": "^1.0.1",
-    "bunyan": "^1.8.12",
     "express": "^4.16.2",
+    "express-winston": "^3.0.1",
     "github-webhook-handler": "^0.7.0",
     "js-yaml": "^3.10.0",
     "json-stream": "^1.0.0",
@@ -27,17 +28,19 @@
     "shell-escape": "^0.2.0",
     "shelljs": "^0.7.8",
     "uuid": "^3.1.0",
+    "winston": "^3.1.0",
     "yargs": "^10.0.3"
   },
   "devDependencies": {
-    "@types/bunyan": "^1.8.4",
     "@types/chai": "^4.1.0",
     "@types/chai-http": "^3.0.3",
     "@types/express": "^4.11.0",
+    "@types/express-winston": "^3.0.0",
     "@types/mocha": "^2.2.46",
-    "@types/node": "^8.5.7",
+    "@types/node": "8.5.1",
     "@types/request": "^2.0.9",
     "@types/shelljs": "^0.7.7",
+    "@types/winston": "^2.4.4",
     "chai": "^4.1.2",
     "chai-http": "^3.0.0",
     "mocha": "^4.1.0",

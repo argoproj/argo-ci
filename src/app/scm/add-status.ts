@@ -1,6 +1,4 @@
 import * as yargs from 'yargs';
-import * as bunyan from 'bunyan';
-const logger = bunyan.createLogger({ name: 'add-status' });
 
 import * as util from '../util';
 
@@ -44,5 +42,5 @@ ConfigManager.create(argv.configPrefix, coreKubeClient).then(async configManager
     process.exit(0);
 }).catch(err => {
     process.exit(1);
-    logger.error(err);
+    util.logger.error(err);
 });

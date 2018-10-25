@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: argoci
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8001
+  selector:
+    app: argoci
+  sessionAffinity: None
+  type: LoadBalancer

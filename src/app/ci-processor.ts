@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import * as AsyncLock from 'async-lock';
 import * as Api from 'kubernetes-client';
-import * as bunyan from 'bunyan';
 import * as uuid from 'uuid';
 
 import * as common from './common';
@@ -11,7 +10,6 @@ import * as util from './util';
 import { ConfigManager } from './config-manager';
 
 const fs = promisify('fs');
-const logger = bunyan.createLogger({ name: 'ci-processor' });
 
 export class CiProcessor {
     private lock = new AsyncLock();
@@ -27,10 +25,10 @@ export class CiProcessor {
 
     public async processGitEvent(scm: common.Scm, scmEvent: common.ScmEvent) {
         try {
-            logger.debug('Processing scm event', scmEvent);
+            util.logger.info('Processing scm event', scmEvent);
             await this.doProcessGitEvent(scm, scmEvent);
         } catch (e) {
-            logger.error(`Failed to process scm event '%s'`, JSON.stringify(scmEvent), e);
+            util.logger.error(`Failed to process scm event '%s'`, JSON.stringify(scmEvent), e);
             this.addCommitStatus(scm, scmEvent, {targetUrl: null, description: 'Argo CI workflow', state: 'failure'});
         }
     }
@@ -42,17 +40,20 @@ export class CiProcessor {
             this.fillCommitArgs(scmEvent, ciWorkflow);
             await this.addExitHandler(scm, scmEvent, ciWorkflow);
             const res = await this.crdKubeClient.ns['workflows'].post({ body: ciWorkflow });
+            util.logger.info(`CI workflow ${res.metadata.namespace}/${res.metadata.name} had been created`);
             this.addCommitStatus(scm, scmEvent, {
                 targetUrl: await this.getStatusTargetUrl(res),
                 description: 'Argo CI workflow',
                 state: 'pending',
             });
+        } else {
+            util.logger.info(`Ignoring SCM event`);
         }
     }
 
     private async getStatusTargetUrl(workflow): Promise<string> {
         const settings = await this.configManager.getSettings();
-        return `${settings.externalUiUrl}/timeline/${workflow.metadata.namespace}/${workflow.metadata.name}`;
+        return `${settings.externalUiUrl}/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`;
     }
 
     private async addExitHandler(scm: common.Scm, scmEvent: common.ScmEvent, workflow) {
@@ -64,7 +65,7 @@ export class CiProcessor {
                 command: ['sh', '-c'],
                 args: ['node /app/scm/add-status.js ' +
                     `--status {{workflow.status}} --repoName ${scmEvent.repo.fullName} --repoUrl ${scmEvent.repo.cloneUrl} ` +
-                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/timeline/${this.namespace}/{{workflow.name}} ` +
+                    `--commit ${scmEvent.commit.sha} --targetUrl ${settings.externalUiUrl}/workflows/${this.namespace}/{{workflow.name}} ` +
                     `--inCluster true --configPrefix ${this.configManager.kubeSecretPrefix} ` +
                     `--scm ${scm.type} --namespace ${this.namespace}`],
             },
@@ -109,7 +110,7 @@ export class CiProcessor {
         try {
             await scm.addCommitStatus(event.repo.cloneUrl, event.repo.fullName, event.commit.sha, status);
         } catch (e) {
-            logger.error('Unable to update commit status', e);
+            util.logger.error('Unable to update commit status', e);
         }
     }
 
@@ -127,7 +128,7 @@ export class CiProcessor {
         } catch (e) {
             await util.sh(`git init && git config core.sparseCheckout true && echo '.argo-ci/' > .git/info/sparse-checkout && git remote add origin '${url}'`, repoPath);
         }
-        logger.debug(`Updating repository '${url}'`);
+        util.logger.info(`Updating repository '${url}'`);
         await util.sh('git fetch origin', repoPath);
         return repoPath;
     }
@@ -138,13 +139,13 @@ export class CiProcessor {
             await util.sh(`git checkout ${tag}`, repoPath);
         } catch (e) {
             //  Sparse checkout failes if .argo-ci/ does not exist
-            logger.warn(`Repository '${repoCloneUrl}#${tag}' does not have .argo-ci/`);
+            util.logger.warn(`Repository '${repoCloneUrl}#${tag}' does not have .argo-ci/`);
         }
         const templatePath = `${repoPath}/.argo-ci/ci.yaml`;
         if (await util.fileExists(templatePath)) {
             return yaml.safeLoad(await fs.readFile(templatePath, 'utf8'));
         }
-        logger.warn(`Repository '${repoCloneUrl}#${tag}' does not have .argo-ci/ci.yaml`);
+        util.logger.warn(`Repository '${repoCloneUrl}#${tag}' does not have .argo-ci/ci.yaml`);
         return null;
     }
 }

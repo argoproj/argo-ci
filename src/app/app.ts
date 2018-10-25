@@ -1,13 +1,11 @@
 import * as express from 'express';
-import * as bunyan from 'bunyan';
 import * as bodyParser from 'body-parser';
+import * as expressWinston from 'express-winston';
 
 import * as common from './common';
 import * as util from './util';
 import { CiProcessor } from './ci-processor';
 import { ConfigManager } from './config-manager';
-
-const logger = bunyan.createLogger({ name: 'app' });
 
 function wrap(action: (req: express.Request) => Promise<any>) {
     return (req: express.Request, res: express.Response) => {
@@ -21,7 +19,7 @@ function wrap(action: (req: express.Request) => Promise<any>) {
                     message: e.message || e,
                 });
                 if (res.statusCode === 500) {
-                    logger.error('Failed to process request %s', req.url, e);
+                    util.logger.error('Failed to process request %s', req.url, e);
                 }
             });
     };
@@ -32,18 +30,25 @@ export async function createServers(
         repoDir: string,
         inCluster: boolean,
         namespace: string,
+        workflowsNamespace: string,
         version: string,
         argoCiImage: string,
         configPrefix: string,
         controllerInstanceId: string,
     }) {
+    const expressLogger = expressWinston.logger({
+        transports: [util.winstonTransport],
+        meta: false,
+        msg: '{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}',
+    });
 
-    const crdKubeClient = util.createKubeCrdClient(options.inCluster, options.namespace, 'argoproj.io', options.version);
+    const crdKubeClient = util.createKubeCrdClient(options.inCluster, options.workflowsNamespace, 'argoproj.io', options.version);
     const coreKubeClient = util.createKubeCoreClient(options.inCluster, options.namespace);
     const configManager = await ConfigManager.create(options.configPrefix, coreKubeClient);
-    const processor = new CiProcessor(options.repoDir, crdKubeClient, options.argoCiImage, options.namespace, options.controllerInstanceId, configManager);
+    const processor = new CiProcessor(options.repoDir, crdKubeClient, options.argoCiImage, options.workflowsNamespace, options.controllerInstanceId, configManager);
 
     const webHookServer = express();
+    webHookServer.use(expressLogger);
 
     webHookServer.post('/api/webhook/:type', wrap(async req => {
         const scmByType = await configManager.getScms();
@@ -60,6 +65,7 @@ export async function createServers(
     }));
 
     const apiServer = express();
+    apiServer.use(expressLogger);
     apiServer.use(bodyParser.json({type: (req) => !req.url.startsWith('/api/webhook/')}));
     apiServer.get('/api/configuration/settings', wrap(async req => configManager.getSettings()));
     apiServer.put('/api/configuration/settings', wrap(async req => configManager.updateSettings(req.body)));

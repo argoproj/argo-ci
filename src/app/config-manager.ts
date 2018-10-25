@@ -46,7 +46,7 @@ export class ConfigManager {
 
     public getScmsConfig(): Map<common.ScmType, string[]> {
         let result = new Map<common.ScmType, string[]>();
-        for (const key of this.scmsConfig.getValue().keys()) {
+        for (const key of Array.from(this.scmsConfig.getValue().keys())) {
             const typeConfig = this.scmsConfig.getValue().get(key);
             result.set(key, Object.keys(typeConfig));
         }
@@ -134,7 +134,7 @@ export class ConfigManager {
 
     private serializeScmsConfig(config: ScmsConfig) {
         const result = {};
-        for (const key of config.keys()) {
+        for (const key of Array.from(config.keys())) {
             result[key] = new Buffer(JSON.stringify(config.get(key))).toString('base64');
         }
         return result;
