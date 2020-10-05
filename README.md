@@ -1,4 +1,4 @@
-**THIS PROJECT IS NO LONGER MAINTAINED. PLEASE TAKE A LOOK AT THE ARGO EVENTS PROJECT INSTEAD (https://github.com/argoproj/argo-events)**
+**THIS PROJECT IS NO LONGER MAINTAINED. PLEASE TAKE A LOOK AT ARGO EVENTS INSTEAD (https://github.com/argoproj/argo-events)**
 
 # Argo CI
 
