@@ -18,7 +18,7 @@
     "express": "^4.16.2",
     "express-winston": "^3.0.1",
     "github-webhook-handler": "^0.7.0",
-    "js-yaml": "^3.10.0",
+    "js-yaml": "^3.13.1",
     "json-stream": "^1.0.0",
     "kubernetes-client": "^3.17.1",
     "promisify-node": "^0.4.0",
